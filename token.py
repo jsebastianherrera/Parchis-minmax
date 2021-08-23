@@ -1,5 +1,5 @@
 class Token:
-    __position=-1
+    __position=0
     def __init__(self, state, colour,id:int):
         self.__state = state
         self.__colour = colour
