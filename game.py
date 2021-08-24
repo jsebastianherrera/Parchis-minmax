@@ -19,6 +19,13 @@ class Game:
    def dice_value():
       return randint(1,6)
 
+   def __get_token_same_pos(self,pos):
+      rt=[]
+      for i in self.__token:
+         if i.get_position()==pos:
+          rt.append(i)
+      return rt  
+
    def move(self,id,dice):
       token=self.__token[self.__get_token_pos(id)]
       if dice == 5:
@@ -38,28 +45,19 @@ class Game:
          self.__move(token.get_id(),dice)
          self.__can_eat(id,token.get_position())
  
-   def __check_wall(self,colour,pos)->True:
-      tok,id=self.__table.table[pos-1]
-      rt=[]
+   def __check_wall(self,colour,pos)->bool:
+      print(pos)
+      tok=self.__get_token_same_pos(pos)
+      c=0
       for i in tok:
-         c=0
-         for j in tok:
-            if i.get_colour()!=colour and j.get_colour()!=colour:
-               c+=1
-         rt.append(c)
-      if i in rt == 2:
+         if i.get_colour()!=colour:
+            c+=1
+      if c==2:
          return True
       return False
       
-      
-      
    def __check_hallway(self,token,dice):
-      index=0
-      if token.get_position()+dice>=68:
-         index=token.get_position()-68+dice
-      else:
-         index=token.get_position()+dice
-   
+      index=self.__pos_move(token.get_position()+dice)
       if token.get_colour()=='Y':
            if index==0:
                  return True,68
@@ -83,17 +81,7 @@ class Game:
       return False,None
  
    def __get_rival_tokens(self,colour:str):
-        
-      """
-      Parameters
-      __________
-      param1:str
-         Receive the current player's colour
-      Returns
-      _______
-      list 
-         Return a list with the tokens in game that can be eaten
-      """ 
+
       rt=[]
       for i in self.__token:
          if i.get_colour()!=colour:   
@@ -101,6 +89,7 @@ class Game:
                print('Vallll')
                rt.append(i)
       return rt
+   
    def __can_eat(self,id:int,pos:int):
       token=self.__token[self.__get_token_pos(id)]
       rivals=self.__get_rival_tokens(token.get_colour())
@@ -112,45 +101,47 @@ class Game:
                i.set_position(0)
                i.set_state('Home')
                
+   def __pos_move(self,pos)->int:
+      if pos>=68:
+         index=pos-68
+         if index==0:
+            index=68
+      else:
+         index=pos
+      
+      return index      
+      
+   def __update_table(self,token,state,mov):
+      self.__table.table[token.get_position()-1].remove((token,token.get_id()))
+      token.set_position(mov)
+      token.set_state(state)
+      if state!='Hallway':
+         self.__table.table[mov-1].append((token,token.get_id()))
       
    def __move(self,id:int,dice):
      token=self.__token[self.__get_token_pos(id)]
      if token.get_state()=='InGame' or token.get_state()=='Safe' or token.get_state()=='Home':
-         
-         if token.get_position()+ dice>=68:
-            index=(token.get_position()+dice)-68
-            if index==0:
-               index=68
-            check,mov=self.__check_hallway(token,dice)
-            if check:
-               self.__table.table[token.get_position()-1].remove((token,token.get_id()))
-               token.set_position(mov)
-               token.set_state('Hallway')
-            else:
-               self.__table.table[token.get_position()-1].remove((token,token.get_id()))
-               if index in self.__table.get_safe_zone():
-                  token.set_state('Safe')
-               else:  
-                  token.set_state('InGame')
-               token.set_position(index)
-               self.__table.table[index-1].append((token,token.get_id()))
-                     
-         else:
-               index=token.get_position()+dice
+            index=self.__pos_move(token.get_position()+dice)
+            if  not self.__check_wall(token.get_colour(),index) and len(self.__get_token_same_pos(index))<2:
                check,mov=self.__check_hallway(token,dice)
-               #The token is in the hallway
                if check:
-                  self.__table.table[token.get_position()-1].remove((token,token.get_id()))
-                  token.set_position(mov)
-                  token.set_state('Hallway')
+                  self.__update_table(token,'Hallway',mov)
                else:
-                  self.__table.table[token.get_position()-1].remove((token,token.get_id()))
                   if index in self.__table.get_safe_zone():
-                     token.set_state('Safe')
+                     self.__update_table(token,'Safe',index)
+                  else:  
+                    self.__update_table(token,'InGame',index)
+            else:
+                  tmp=self.__get_token_in_game_by_colour(token.get_colour())
+                  print(tmp)
+                  if len(tmp)>1:
+                     tmp.remove(token)
+                     print('U can not get through a wall')           
+                     self.__move(tmp[0].get_id(),dice)
                   else:
-                     token.set_state('InGame')
-                  token.set_position(index)
-                  self.__table.table[index-1].append((token,token.get_id()))
+                     print('U cant move any token')    
+    
+               
      elif token.get_state()=='Hallway':
          if token.get_position()+dice<7:
             token.set_position(token.get_position()+dice)
@@ -159,11 +150,14 @@ class Game:
             token.set_position(-1)
          else:
             print('Excedido')
+   
+   
    def __get_token_in_game_by_colour(self,colour):
       rt=[]
       for i in self.__token:
-         if i.get_colour()==colour and i.get_state()=='InGame':
-            rt.append(i)
+         if i.get_colour()==colour:
+            if i.get_state()=='InGame' or i.get_state()=='Safe' :
+               rt.append(i)
       return rt
             
             
