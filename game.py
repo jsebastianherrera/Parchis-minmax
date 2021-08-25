@@ -3,13 +3,14 @@ from random import randint
 from token import Token
 from table import Table
 class Game:
+   __change:bool
    __table=Table()
    
    
    def __init__(self,token,colors):
       self.__token=token
       self.__init_game(colors)
-
+      self.__change=False
    def get_tokens(self):
       return self.__token
 
@@ -218,4 +219,23 @@ class Game:
          if i.get_colour()==colour and i.get_state()=='Home':
             rt.append(self.__get_token_pos(i.get_id()))      
       return rt              
+   def _read_dice(self):
+     self.change=True
+     value=int(input('Dice:'))
+     if value>=1 and value<=6:
+        return value
+     exit()
    
+   def __winner(self,colour):
+      c=0
+      for i in self.__token:
+         if i.get_colour()==colour and i.get_state()=='Finished':
+            c+=1
+      if c==2:
+         return True
+      return False
+   def __min_val(self):
+      max=-999
+   def __heuristic_function(self,token,dice):
+      print('Heuristic')
+      
